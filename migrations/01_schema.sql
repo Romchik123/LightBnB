@@ -20,29 +20,6 @@ CREATE TABLE users (
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 CREATE TABLE properties (
   id SERIAL PRIMARY KEY NOT NULL,
   owner_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
@@ -73,17 +50,6 @@ CREATE TABLE properties (
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 CREATE TABLE reservations (
   id SERIAL PRIMARY KEY NOT NULL,
   start_date DATE NOT NULL,
@@ -91,29 +57,6 @@ CREATE TABLE reservations (
   property_id INTEGER REFERENCES properties(id) ON DELETE CASCADE,
   guest_id INTEGER REFERENCES users(id) ON DELETE CASCADE
 );
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
