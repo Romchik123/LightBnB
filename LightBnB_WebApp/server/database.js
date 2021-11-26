@@ -84,14 +84,14 @@ exports.getUserWithId = getUserWithId;
  * @return {Promise<{}>} A promise to the user.
  */
 const addUser = function (user) {
-  // const {name, email, password} = user;
+  const {name, email, password} = user;
 
   return pool
     .query(
       `INSERT INTO users (name, email, password)
     VALUES ($1, $2, $3) RETURNING *;
   `,
-      [user["name"], user["email"], user["password"]]
+      [name, email, password]
     )
     .then((result) => {
       console.log({ result, rows: result.rows });
@@ -238,9 +238,39 @@ exports.getAllProperties = getAllProperties;
  * @return {Promise<{}>} A promise to the property.
  */
 const addProperty = function (property) {
-  const propertyId = Object.keys(properties).length + 1;
-  property.id = propertyId;
-  properties[propertyId] = property;
-  return Promise.resolve(property);
+  const {title, description, owner_id, cover_photo_url, thumbnail_photo_url, 
+    cost_per_night, parking_spaces, number_of_bathrooms, number_of_bedrooms, 
+    province, city, country, street, post_code} = property;
+
+  return pool
+    .query(
+      `INSERT INTO properties (
+        title, description, owner_id, cover_photo_url, thumbnail_photo_url, 
+        cost_per_night, parking_spaces, number_of_bathrooms, number_of_bedrooms, 
+        active, province, city, country, street, post_code) 
+        VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 
+        $12, $13, $14)
+         RETURNING *;
+  `,
+      [title, description, owner_id, cover_photo_url, thumbnail_photo_url, 
+        cost_per_night, parking_spaces, number_of_bathrooms, number_of_bedrooms, 
+        province, city, country, street, post_code]
+    )
+    .then((result) => {
+      console.log({ result, rows: result.rows });
+      if (result.rowCount === 0) {
+        return null;
+      }
+      return result.rows[0];
+    })
+    .catch((err) => {
+      console.log(err.message);
+    });
+
+  // const propertyId = Object.keys(properties).length + 1;
+  // property.id = propertyId;
+  // properties[propertyId] = property;
+  // return Promise.resolve(property);
 };
 exports.addProperty = addProperty;
