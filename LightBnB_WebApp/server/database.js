@@ -12,27 +12,28 @@ const pool = new Pool({
 
 // run to check my output ::
 
-pool
-  .query(
-    `
-    SELECT
-    properties.*,
-    avg(property_reviews.rating) AS average_rating,
-    reservations.*
-    FROM reservations
-    JOIN properties ON reservations.property_id = properties.id
-    JOIN property_reviews ON property_reviews.property_id = properties.id
-    WHERE reservations.guest_id = 1 
-    GROUP BY properties.id, reservations.id
-    LIMIT 10;
-`,
-[])
-  .then((result) => {
-    console.log(result.rows);
-  })
-  .catch((err) => {
-    console.log(err.message);
-  });
+// pool
+//   .query(
+//     `
+//     SELECT
+//     properties.*,
+//     avg(property_reviews.rating) AS average_rating,
+//     reservations.*
+//     FROM reservations
+//     JOIN properties ON reservations.property_id = properties.id
+//     LEFT JOIN property_reviews ON property_reviews.property_id = properties.id
+//     WHERE reservations.guest_id = 1 
+//     GROUP BY properties.id, reservations.id
+//     LIMIT 10;
+// `,
+//     []
+//   )
+//   .then((result) => {
+//     console.log(result.rows);
+//   })
+//   .catch((err) => {
+//     console.log(err.message);
+//   });
 
 /// Users
 
@@ -46,7 +47,6 @@ const getUserWithEmail = function (email) {
   return pool
     .query(`SELECT * FROM users WHERE email = $1`, [email])
     .then((result) => {
-      console.log("result: ",result);
       if (result.rowCount === 0) {
         return null;
       }
@@ -84,7 +84,7 @@ exports.getUserWithId = getUserWithId;
  * @return {Promise<{}>} A promise to the user.
  */
 const addUser = function (user) {
-  const {name, email, password} = user;
+  const { name, email, password } = user;
 
   return pool
     .query(
@@ -120,7 +120,8 @@ exports.addUser = addUser;
  */
 const getAllReservations = function (guest_id, limit = 10) {
   return pool
-    .query(`
+    .query(
+      `
     SELECT
     properties.*,
     avg(property_reviews.rating) AS average_rating,
@@ -131,10 +132,9 @@ const getAllReservations = function (guest_id, limit = 10) {
     WHERE reservations.guest_id = $1 
     GROUP BY properties.id, reservations.id
     LIMIT $2;
-    ;`, [
-      guest_id,
-      limit,
-    ])
+    ;`,
+      [guest_id, limit]
+    )
     .then((result) => {
       if (result.rowCount === 0) {
         return null;
@@ -168,7 +168,6 @@ exports.getAllReservations = getAllReservations;
 //     });
 // };
 
-
 const getAllProperties = function (options, limit = 10) {
   // 1
   const queryParams = [];
@@ -176,7 +175,7 @@ const getAllProperties = function (options, limit = 10) {
   let queryString = `
   SELECT properties.*, avg(property_reviews.rating) as average_rating
   FROM properties
-  JOIN property_reviews ON properties.id = property_id
+  LEFT JOIN property_reviews ON properties.id = property_id
   `;
 
   // 3
@@ -185,12 +184,10 @@ const getAllProperties = function (options, limit = 10) {
     queryString += `WHERE city LIKE $${queryParams.length} `;
   }
 
-
   if (options.owner_id) {
     queryParams.push(`%${options.owner_id}%`);
     queryString += `AND owner_id = $${queryParams.length} `;
   }
-
 
   if (options.minimum_price_per_night) {
     queryParams.push(Number(`${options.minimum_price_per_night}`) * 100);
@@ -199,20 +196,15 @@ const getAllProperties = function (options, limit = 10) {
   // WHERE column_name BETWEEN value1 AND value2;
   // WHERE cost_per_night BETWEEN minValue AND maxValue
 
-
   if (options.maximum_price_per_night) {
     queryParams.push(Number(`${options.maximum_price_per_night}`) * 100);
     queryString += `AND cost_per_night < $${queryParams.length} `;
   }
 
-
   if (options.minimum_rating) {
     queryParams.push(Number(`${options.minimum_rating}`));
     queryString += `HAVING avg(property_reviews.rating) = $${queryParams.length} `;
   }
-
-  
-
 
   // 4
   queryParams.push(limit);
@@ -223,12 +215,11 @@ const getAllProperties = function (options, limit = 10) {
   `;
 
   // 5
-  console.log("String: ", queryString,"Params: " ,queryParams);
+  console.log(queryString, queryParams);
 
   // 6
   return pool.query(queryString, queryParams).then((res) => res.rows);
 };
-
 
 exports.getAllProperties = getAllProperties;
 
@@ -238,27 +229,53 @@ exports.getAllProperties = getAllProperties;
  * @return {Promise<{}>} A promise to the property.
  */
 const addProperty = function (property) {
-  const {title, description, owner_id, cover_photo_url, thumbnail_photo_url, 
-    cost_per_night, parking_spaces, number_of_bathrooms, number_of_bedrooms, 
-    province, city, country, street, post_code} = property;
+  const {
+    title,
+    description,
+    owner_id,
+    cover_photo_url,
+    thumbnail_photo_url,
+    cost_per_night,
+    parking_spaces,
+    number_of_bathrooms,
+    number_of_bedrooms,
+    province,
+    city,
+    country,
+    street,
+    post_code,
+  } = property;
 
   return pool
     .query(
       `INSERT INTO properties (
         title, description, owner_id, cover_photo_url, thumbnail_photo_url, 
         cost_per_night, parking_spaces, number_of_bathrooms, number_of_bedrooms, 
-        active, province, city, country, street, post_code) 
+        province, city, country, street, post_code) 
         VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 
         $12, $13, $14)
          RETURNING *;
   `,
-      [title, description, owner_id, cover_photo_url, thumbnail_photo_url, 
-        cost_per_night, parking_spaces, number_of_bathrooms, number_of_bedrooms, 
-        province, city, country, street, post_code]
+      [
+        title,
+        description,
+        owner_id,
+        cover_photo_url,
+        thumbnail_photo_url,
+        Number(cost_per_night) * 100,
+        Number(parking_spaces),
+        Number(number_of_bathrooms),
+        Number(number_of_bedrooms),
+        province,
+        city,
+        country,
+        street,
+        post_code,
+      ]
     )
     .then((result) => {
-      console.log({ result, rows: result.rows });
+      console.log("+++++++++++++++++++++", result.rows[0]);
       if (result.rowCount === 0) {
         return null;
       }
