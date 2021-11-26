@@ -10,31 +10,6 @@ const pool = new Pool({
   database: "lightbnb",
 });
 
-// run to check my output ::
-
-// pool
-//   .query(
-//     `
-//     SELECT
-//     properties.*,
-//     avg(property_reviews.rating) AS average_rating,
-//     reservations.*
-//     FROM reservations
-//     JOIN properties ON reservations.property_id = properties.id
-//     LEFT JOIN property_reviews ON property_reviews.property_id = properties.id
-//     WHERE reservations.guest_id = 1 
-//     GROUP BY properties.id, reservations.id
-//     LIMIT 10;
-// `,
-//     []
-//   )
-//   .then((result) => {
-//     console.log(result.rows);
-//   })
-//   .catch((err) => {
-//     console.log(err.message);
-//   });
-
 /// Users
 
 /**
@@ -43,7 +18,6 @@ const pool = new Pool({
  * @return {Promise<{}>} A promise to the user.
  */
 const getUserWithEmail = function (email) {
-  // console.log(email);
   return pool
     .query(`SELECT * FROM users WHERE email = $1`, [email])
     .then((result) => {
@@ -103,11 +77,6 @@ const addUser = function (user) {
     .catch((err) => {
       console.log(err.message);
     });
-
-  // const userId = Object.keys(users).length + 1;
-  // user.id = userId;
-  // users[userId] = user;
-  // return Promise.resolve(user);
 };
 exports.addUser = addUser;
 
@@ -144,7 +113,7 @@ const getAllReservations = function (guest_id, limit = 10) {
     .catch((err) => {
       console.log(err.message);
     });
-  //   // return getAllProperties(null, 2);
+  // return getAllProperties(null, 2);
 };
 exports.getAllReservations = getAllReservations;
 
@@ -156,17 +125,6 @@ exports.getAllReservations = getAllReservations;
  * @param {*} limit The number of results to return.
  * @return {Promise<[{}]>}  A promise to the properties.
  */
-
-// const getAllProperties = (options, limit = 10) => {
-//   return pool
-//     .query(`SELECT * FROM properties LIMIT $1`, [limit])
-//     .then((result) => {
-//       return result.rows;
-//     })
-//     .catch((err) => {
-//       console.log(err.message);
-//     });
-// };
 
 const getAllProperties = function (options, limit = 10) {
   // 1
@@ -193,8 +151,6 @@ const getAllProperties = function (options, limit = 10) {
     queryParams.push(Number(`${options.minimum_price_per_night}`) * 100);
     queryString += `AND cost_per_night > $${queryParams.length} `;
   }
-  // WHERE column_name BETWEEN value1 AND value2;
-  // WHERE cost_per_night BETWEEN minValue AND maxValue
 
   if (options.maximum_price_per_night) {
     queryParams.push(Number(`${options.maximum_price_per_night}`) * 100);
@@ -275,7 +231,6 @@ const addProperty = function (property) {
       ]
     )
     .then((result) => {
-      console.log("+++++++++++++++++++++", result.rows[0]);
       if (result.rowCount === 0) {
         return null;
       }
@@ -284,10 +239,5 @@ const addProperty = function (property) {
     .catch((err) => {
       console.log(err.message);
     });
-
-  // const propertyId = Object.keys(properties).length + 1;
-  // property.id = propertyId;
-  // properties[propertyId] = property;
-  // return Promise.resolve(property);
 };
 exports.addProperty = addProperty;
