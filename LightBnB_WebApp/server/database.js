@@ -12,16 +12,27 @@ const pool = new Pool({
 
 // run to check my output ::
 
-// pool
-//   .query(`INSERT INTO users (name, email, password)
-//   VALUES ($1, $2, $3);
-// `, ["hey", "hey@gmail.com", "hey"])
-//   .then((result) => {
-//     console.log(result.rows);
-//   })
-//   .catch((err) => {
-//     console.log(err.message);
-//   });
+pool
+  .query(
+    `
+    SELECT
+    properties.*,
+    avg(property_reviews.rating) AS average_rating,
+    reservations.*
+    FROM reservations
+    JOIN properties ON reservations.property_id = properties.id
+    JOIN property_reviews ON property_reviews.property_id = properties.id
+    WHERE reservations.guest_id = 1 
+    GROUP BY properties.id, reservations.id
+    LIMIT 10;
+`,
+[])
+  .then((result) => {
+    console.log(result.rows);
+  })
+  .catch((err) => {
+    console.log(err.message);
+  });
 
 /// Users
 
@@ -31,9 +42,11 @@ const pool = new Pool({
  * @return {Promise<{}>} A promise to the user.
  */
 const getUserWithEmail = function (email) {
+  // console.log(email);
   return pool
     .query(`SELECT * FROM users WHERE email = $1`, [email])
     .then((result) => {
+      console.log("result: ",result);
       if (result.rowCount === 0) {
         return null;
       }
@@ -71,15 +84,17 @@ exports.getUserWithId = getUserWithId;
  * @return {Promise<{}>} A promise to the user.
  */
 const addUser = function (user) {
-
   // const {name, email, password} = user;
 
   return pool
-    .query(`INSERT INTO users (name, email, password)
+    .query(
+      `INSERT INTO users (name, email, password)
     VALUES ($1, $2, $3) RETURNING *;
-  `, [user["name"], user["email"], user["password"]])
+  `,
+      [user["name"], user["email"], user["password"]]
+    )
     .then((result) => {
-      console.log({result, rows: result.rows});
+      console.log({ result, rows: result.rows });
       if (result.rowCount === 0) {
         return null;
       }
@@ -104,7 +119,32 @@ exports.addUser = addUser;
  * @return {Promise<[{}]>} A promise to the reservations.
  */
 const getAllReservations = function (guest_id, limit = 10) {
-  return getAllProperties(null, 2);
+  return pool
+    .query(`
+    SELECT
+    properties.*,
+    avg(property_reviews.rating) AS average_rating,
+    reservations.*
+    FROM reservations
+    JOIN properties ON reservations.property_id = properties.id
+    JOIN property_reviews ON property_reviews.property_id = properties.id
+    WHERE reservations.guest_id = $1 
+    GROUP BY properties.id, reservations.id
+    LIMIT $2;
+    ;`, [
+      guest_id,
+      limit,
+    ])
+    .then((result) => {
+      if (result.rowCount === 0) {
+        return null;
+      }
+      return result.rows;
+    })
+    .catch((err) => {
+      console.log(err.message);
+    });
+  //   // return getAllProperties(null, 2);
 };
 exports.getAllReservations = getAllReservations;
 
